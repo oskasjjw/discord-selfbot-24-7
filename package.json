@@ -13,7 +13,8 @@
   "dependencies": {
     "discord.js": "^14.13.0",
     "@discordjs/voice": "^0.16.0",
-    "opusscript": "^0.0.8"
+    "opusscript": "^0.0.8",
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
