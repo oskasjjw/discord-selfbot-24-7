@@ -1,5 +1,28 @@
 const { Client, GatewayIntentBits, ActivityType, ChannelType, EmbedBuilder } = require('discord.js');
-const { DISCORD_TOKEN, VOICE_CHANNEL_ID, SPOTIFY_TRACK, SPOTIFY_ARTIST, AUTO_DEAFEN } = require('./config');
+
+// Read token directly from environment variable
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const VOICE_CHANNEL_ID = process.env.VOICE_CHANNEL_ID || "0";
+const SPOTIFY_TRACK = process.env.SPOTIFY_TRACK || "Your Song Name";
+const SPOTIFY_ARTIST = process.env.SPOTIFY_ARTIST || "Artist Name";
+const AUTO_DEAFEN = process.env.AUTO_DEAFEN !== "false";
+
+// Debug logging
+console.log("\n=== CONFIG DEBUG ===");
+console.log("DISCORD_TOKEN exists:", !!DISCORD_TOKEN);
+console.log("DISCORD_TOKEN length:", DISCORD_TOKEN ? DISCORD_TOKEN.length : 0);
+console.log("VOICE_CHANNEL_ID:", VOICE_CHANNEL_ID);
+console.log("SPOTIFY_TRACK:", SPOTIFY_TRACK);
+console.log("SPOTIFY_ARTIST:", SPOTIFY_ARTIST);
+console.log("AUTO_DEAFEN:", AUTO_DEAFEN);
+console.log("===================\n");
+
+// Validate token exists
+if (!DISCORD_TOKEN || DISCORD_TOKEN.trim() === "") {
+  console.error("❌ ERROR: DISCORD_TOKEN is not set in Railway variables!");
+  console.error("Please add DISCORD_TOKEN to your Railway environment variables.");
+  process.exit(1);
+}
 
 class SelfBot extends Client {
   constructor() {
