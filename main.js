@@ -1,26 +1,31 @@
 const { Client, GatewayIntentBits, ActivityType, ChannelType, EmbedBuilder } = require('discord.js');
 
-// Read token directly from environment variable
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+// Read token directly - NO config.js
+const DISCORD_TOKEN = (process.env.DISCORD_TOKEN || "").trim();
 const VOICE_CHANNEL_ID = process.env.VOICE_CHANNEL_ID || "0";
 const SPOTIFY_TRACK = process.env.SPOTIFY_TRACK || "Your Song Name";
 const SPOTIFY_ARTIST = process.env.SPOTIFY_ARTIST || "Artist Name";
 const AUTO_DEAFEN = process.env.AUTO_DEAFEN !== "false";
 
 // Debug logging
-console.log("\n=== CONFIG DEBUG ===");
-console.log("DISCORD_TOKEN exists:", !!DISCORD_TOKEN);
-console.log("DISCORD_TOKEN length:", DISCORD_TOKEN ? DISCORD_TOKEN.length : 0);
+console.log("\n=== ENVIRONMENT DEBUG ===");
+console.log("DISCORD_TOKEN present:", !!DISCORD_TOKEN);
+console.log("DISCORD_TOKEN length:", DISCORD_TOKEN.length);
 console.log("VOICE_CHANNEL_ID:", VOICE_CHANNEL_ID);
-console.log("SPOTIFY_TRACK:", SPOTIFY_TRACK);
-console.log("SPOTIFY_ARTIST:", SPOTIFY_ARTIST);
-console.log("AUTO_DEAFEN:", AUTO_DEAFEN);
-console.log("===================\n");
+console.log("All env vars:", Object.keys(process.env).filter(k => k.includes('DISCORD') || k.includes('VOICE') || k.includes('SPOTIFY')));
+console.log("========================\n");
 
 // Validate token exists
-if (!DISCORD_TOKEN || DISCORD_TOKEN.trim() === "") {
-  console.error("❌ ERROR: DISCORD_TOKEN is not set in Railway variables!");
-  console.error("Please add DISCORD_TOKEN to your Railway environment variables.");
+if (!DISCORD_TOKEN || DISCORD_TOKEN.length === 0) {
+  console.error("\n❌ CRITICAL: DISCORD_TOKEN is missing!");
+  console.error("Railway Variables Status:");
+  console.error("DISCORD_TOKEN:", process.env.DISCORD_TOKEN ? "SET" : "NOT SET");
+  console.error("\nMake sure to:");
+  console.error("1. Go to Railway Dashboard");
+  console.error("2. Click your service");
+  console.error("3. Go to VARIABLES tab");
+  console.error("4. Add: DISCORD_TOKEN = your_token_here");
+  console.error("5. Click DEPLOY\n");
   process.exit(1);
 }
 
@@ -39,7 +44,6 @@ class SelfBot extends Client {
     });
     this.voiceConnection = null;
     this.guild = null;
-    this.deafened = AUTO_DEAFEN;
   }
 
   async connectToVoice(channelId = null) {
@@ -90,7 +94,7 @@ class SelfBot extends Client {
       await this.user.setActivity(`${track} - ${artist}`, {
         type: ActivityType.Listening,
       });
-      console.log(`✅ Spotify status set to: ${track} - ${artist}`);
+      console.log(`✅ Spotify status: ${track} - ${artist}`);
     } catch (error) {
       console.log(`❌ Failed to update status: ${error.message}`);
     }
@@ -126,26 +130,24 @@ class SelfBot extends Client {
 const client = new SelfBot();
 
 client.once('ready', async () => {
-  console.log(`\n🎉 Logged in as ${client.user.username}#${client.user.discriminator}`);
-  console.log(`User ID: ${client.user.id}\n`);
+  console.log(`\n🎉 LOGGED IN: ${client.user.username}#${client.user.discriminator}`);
+  console.log(`ID: ${client.user.id}\n`);
 
   await client.connectToVoice();
   await client.updateSpotifyStatus(SPOTIFY_TRACK, SPOTIFY_ARTIST);
 
-  // Update Spotify status every 15 seconds
   setInterval(async () => {
     await client.updateSpotifyStatus(SPOTIFY_TRACK, SPOTIFY_ARTIST);
   }, 15000);
 
-  // Check voice connection every 30 seconds
   setInterval(async () => {
     try {
       if (!client.voiceConnection || client.voiceConnection.state.status === 'disconnected') {
-        console.log('⚠️  Voice connection lost, reconnecting...');
+        console.log('⚠️  Reconnecting voice...');
         await client.connectToVoice();
       }
     } catch (error) {
-      console.log(`❌ Error maintaining voice connection: ${error.message}`);
+      console.log(`❌ Voice error: ${error.message}`);
     }
   }, 30000);
 });
@@ -159,7 +161,7 @@ client.on('messageCreate', async (message) => {
     await client.sendHelpEmbed(message);
   }
   else if (content === '.ping') {
-    console.log(`🏓 Pong! Latency: ${client.ws.ping}ms`);
+    console.log(`🏓 Latency: ${client.ws.ping}ms`);
   }
   else if (content.startsWith('.join ')) {
     const channelId = content.substring(6).trim();
@@ -207,13 +209,8 @@ client.on('error', error => {
   console.log(`❌ Client error: ${error.message}`);
 });
 
-client.on('shardDisconnect', () => {
-  console.log('⚠️  Shard disconnected');
+console.log("🔗 Attempting login with token...\n");
+client.login(DISCORD_TOKEN).catch(err => {
+  console.error("❌ LOGIN FAILED:", err.message);
+  process.exit(1);
 });
-
-client.on('shardError', error => {
-  console.log(`❌ Shard error: ${error.message}`);
-});
-
-console.log("🔗 Attempting to login...\n");
-client.login(DISCORD_TOKEN);
